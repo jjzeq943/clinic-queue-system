@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>叫號控制端</title>
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     label { display: block; margin-top: 10px; }
@@ -36,6 +36,7 @@
 
   <script>
     const socket = io();
+
     const clinicInput = document.getElementById('clinic');
     const doctorInput = document.getElementById('doctor');
     const currentNumberInput = document.getElementById('currentNumber');
@@ -43,7 +44,12 @@
     const nextBtn = document.getElementById('nextBtn');
     const skipBtn = document.getElementById('skipBtn');
 
-    let data = {};
+    let data = {
+      clinic: "____診",
+      doctor: "王大明",
+      currentNumber: 0,
+      queueList: []
+    };
 
     function updateUI(d) {
       clinicInput.value = d.clinic;
@@ -77,18 +83,37 @@
 
     nextBtn.addEventListener('click', () => {
       if (data.queueList.length > 0) {
-        data.currentNumber++;
+        data.currentNumber += 1;
         data.queueList.shift();
         sendUpdate();
+        speak(`請第 ${data.currentNumber} 號病患進診`);
+      } else {
+        alert("目前沒有等待病患");
       }
     });
 
     skipBtn.addEventListener('click', () => {
       if (data.queueList.length > 0) {
-        data.queueList.shift();
+        data.queueList.push(data.queueList.shift()); // 移到最後
         sendUpdate();
+      } else {
+        alert("目前沒有等待病患");
       }
     });
+
+    queueListInput.addEventListener('change', () => {
+      data.queueList = queueListInput.value
+        .split('\n')
+        .map(name => name.trim())
+        .filter(name => name !== '');
+      sendUpdate();
+    });
+
+    function speak(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "zh-TW";
+      window.speechSynthesis.speak(utterance);
+    }
   </script>
 </body>
 </html>
