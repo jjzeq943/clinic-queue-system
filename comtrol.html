@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>叫號控制端</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    label { display: block; margin-top: 10px; }
+    input, button, textarea { margin-top: 5px; width: 100%; font-size: 16px; padding: 8px; }
+    button { cursor: pointer; }
+    textarea { height: 100px; }
+  </style>
+</head>
+<body>
+  <h1>診所叫號控制端</h1>
+
+  <label>診別名稱：
+    <input id="clinic" type="text" value="____診" />
+  </label>
+
+  <label>醫師名稱：
+    <input id="doctor" type="text" value="王大明" />
+  </label>
+
+  <label>目前叫號：
+    <input id="currentNumber" type="number" value="0" readonly />
+  </label>
+
+  <label>等待名單（每行一名）：
+    <textarea id="queueList"></textarea>
+  </label>
+
+  <button id="nextBtn">叫下一號</button>
+  <button id="skipBtn">過號</button>
+
+  <script>
+    const socket = io();
+    const clinicInput = document.getElementById('clinic');
+    const doctorInput = document.getElementById('doctor');
+    const currentNumberInput = document.getElementById('currentNumber');
+    const queueListInput = document.getElementById('queueList');
+    const nextBtn = document.getElementById('nextBtn');
+    const skipBtn = document.getElementById('skipBtn');
+
+    let data = {};
+
+    function updateUI(d) {
+      clinicInput.value = d.clinic;
+      doctorInput.value = d.doctor;
+      currentNumberInput.value = d.currentNumber;
+      queueListInput.value = d.queueList.join('\n');
+    }
+
+    socket.on('update', (d) => {
+      data = d;
+      updateUI(data);
+    });
+
+    function sendUpdate() {
+      fetch('/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    }
+
+    clinicInput.addEventListener('change', () => {
+      data.clinic = clinicInput.value;
+      sendUpdate();
+    });
+
+    doctorInput.addEventListener('change', () => {
+      data.doctor = doctorInput.value;
+      sendUpdate();
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (data.queueList.length > 0) {
+        data.currentNumber++;
+        data.queueList.shift();
+        sendUpdate();
+      }
+    });
+
+    skipBtn.addEventListener('click', () => {
+      if (data.queueList.length > 0) {
+        data.queueList.shift();
+        sendUpdate();
+      }
+    });
+  </script>
+</body>
+</html>

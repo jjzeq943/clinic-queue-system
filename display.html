@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>叫號顯示端</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 30px; background: #f5f5f5; }
+    .clinic { font-size: 40px; margin-bottom: 20px; }
+    .doctor { font-size: 30px; margin-bottom: 10px; }
+    .current-number { font-size: 80px; font-weight: bold; color: red; margin-bottom: 20px; }
+    .queue-list { font-size: 24px; text-align: left; max-width: 400px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div class="clinic" id="clinic">____診</div>
+  <div class="doctor" id="doctor">看診醫師 王大明</div>
+  <div class="current-number" id="currentNumber">0</div>
+  <div class="queue-list" id="queueList"></div>
+
+  <script>
+    const socket = io();
+    const clinicEl = document.getElementById('clinic');
+    const doctorEl = document.getElementById('doctor');
+    const currentNumberEl = document.getElementById('currentNumber');
+    const queueListEl = document.getElementById('queueList');
+
+    socket.on('update', (data) => {
+      clinicEl.textContent = data.clinic;
+      doctorEl.textContent = "看診醫師 " + data.doctor;
+      currentNumberEl.textContent = data.currentNumber;
+
+      if(data.queueList.length === 0){
+        queueListEl.innerHTML = "<i>等待名單空無一人</i>";
+      } else {
+        let html = "";
+        data.queueList.forEach((name, index) => {
+          html += (index + 1) + ". " + name + "<br/>";
+        });
+        queueListEl.innerHTML = html;
+      }
+
+      // 語音播報
+      if('speechSynthesis' in window && data.currentNumber > 0){
+        let msg = new SpeechSynthesisUtterance();
+        msg.text = `請${data.currentNumber}號，到${data.clinic}，看診醫師${data.doctor}`;
+        window.speechSynthesis.cancel(); // 取消前一則語音
+        window.speechSynthesis.speak(msg);
+      }
+    });
+  </script>
+</body>
+</html>
